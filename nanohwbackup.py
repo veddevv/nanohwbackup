@@ -11,16 +11,18 @@ import os
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-DEFAULT_SAVE_DIR = os.getenv('DEFAULT_SAVE_DIR', os.path.expanduser('~'))
-
 class NanoHWApp(tk.Tk):
     VERSION = "0.2.2"
+    CANVAS_WIDTH = 600
+    CANVAS_HEIGHT = 400
 
     def __init__(self):
         super().__init__()
         self.title("NanoHW")
         self.geometry("800x600")
         self.configure(bg="#ffffff")
+
+        self.DEFAULT_SAVE_DIR = os.getenv('DEFAULT_SAVE_DIR', os.path.expanduser('~'))
 
         self.create_tabs()
         self.setup_system_info_tab()
@@ -89,9 +91,9 @@ class NanoHWApp(tk.Tk):
         self.brush_size = 5
         self.current_color = "#000000"
         self.history = []
-        self.canvas = tk.Canvas(self.nanopaint_tab, bg="white", width=600, height=400)
+        self.canvas = tk.Canvas(self.nanopaint_tab, bg="white", width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self.canvas.pack()
-        self.image = Image.new("RGB", (600, 400), "white")
+        self.image = Image.new("RGB", (self.CANVAS_WIDTH, self.CANVAS_HEIGHT), "white")
         self.draw = ImageDraw.Draw(self.image)
         self.canvas_image = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.canvas_image)
@@ -128,16 +130,25 @@ class NanoHWApp(tk.Tk):
         if self.drawing:
             x, y = event.x, event.y
             if self.current_brush == "circle":
-                self.canvas.create_oval(self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size, fill=self.current_color, outline=self.current_color)
-                self.draw.ellipse([self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size], fill=self.current_color)
+                self.draw_circle(x, y)
             elif self.current_brush == "square":
-                self.canvas.create_rectangle(self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size, fill=self.current_color, outline=self.current_color)
-                self.draw.rectangle([self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size], fill=self.current_color)
+                self.draw_square(x, y)
             elif self.current_brush == "line":
-                self.canvas.create_line(self.last_x, self.last_y, x, y, fill=self.current_color, width=self.brush_size)
-                self.draw.line([self.last_x, self.last_y, x, y], fill=self.current_color, width=self.brush_size)
+                self.draw_line(x, y)
             self.last_x, self.last_y = x, y
         self.update_canvas_image()
+
+    def draw_circle(self, x, y):
+        self.canvas.create_oval(self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size, fill=self.current_color, outline=self.current_color)
+        self.draw.ellipse([self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size], fill=self.current_color)
+
+    def draw_square(self, x, y):
+        self.canvas.create_rectangle(self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size, fill=self.current_color, outline=self.current_color)
+        self.draw.rectangle([self.last_x - self.brush_size, self.last_y - self.brush_size, self.last_x + self.brush_size, self.last_y + self.brush_size], fill=self.current_color)
+
+    def draw_line(self, x, y):
+        self.canvas.create_line(self.last_x, self.last_y, x, y, fill=self.current_color, width=self.brush_size)
+        self.draw.line([self.last_x, self.last_y, x, y], fill=self.current_color, width=self.brush_size)
 
     def stop_draw(self, event):
         self.drawing = False
@@ -156,13 +167,13 @@ class NanoHWApp(tk.Tk):
 
     def clear_canvas(self):
         self.canvas.delete("all")
-        self.image = Image.new("RGB", (600, 400), "white")
+        self.image = Image.new("RGB", (self.CANVAS_WIDTH, self.CANVAS_HEIGHT), "white")
         self.draw = ImageDraw.Draw(self.image)
         self.update_canvas_image()
 
     def save_image(self):
         try:
-            file_path = filedialog.asksaveasfilename(initialdir=DEFAULT_SAVE_DIR, defaultextension=".png", filetypes=[("PNG files", "*.png")])
+            file_path = filedialog.asksaveasfilename(initialdir=self.DEFAULT_SAVE_DIR, defaultextension=".png", filetypes=[("PNG files", "*.png")])
             if file_path:
                 self.image.save(file_path)
                 logging.info(f"Image saved to {file_path}")
